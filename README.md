@@ -1,2 +1,2 @@
 # tic-tac-toe
-Play Tic tac toe
+Play 2 Player Tic tac toe
