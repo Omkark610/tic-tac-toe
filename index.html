@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AETHER XO — Tactical Tic-Tac-Toe Studio</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #07090e;
+      --bg-card: rgba(17, 21, 34, 0.78);
+      --border-glass: rgba(255, 255, 255, 0.09);
+      --x-color: #fbbf24;
+      --x-glow: rgba(251, 191, 36, 0.45);
+      --o-color: #38bdf8;
+      --o-glow: rgba(56, 189, 248, 0.45);
+      --accent: #818cf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    [data-theme="cyber"] {
+      --bg-primary: #090414;
+      --bg-card: rgba(24, 11, 46, 0.78);
+      --border-glass: rgba(236, 72, 153, 0.18);
+      --x-color: #f43f5e;
+      --x-glow: rgba(244, 63, 94, 0.5);
+      --o-color: #2dd4bf;
+      --o-glow: rgba(45, 212, 191, 0.5);
+      --accent: #c084fc;
+      --text-main: #fdf4ff;
+      --text-muted: #cbd5e1;
+    }
+
+    [data-theme="emerald"] {
+      --bg-primary: #040d0a;
+      --bg-card: rgba(10, 28, 22, 0.8);
+      --border-glass: rgba(52, 211, 153, 0.16);
+      --x-color: #34d399;
+      --x-glow: rgba(52, 211, 153, 0.45);
+      --o-color: #fb923c;
+      --o-glow: rgba(251, 146, 60, 0.45);
+      --accent: #38bdf8;
+      --text-main: #ecfdf5;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      transition: background-color 0.4s ease, color 0.3s ease;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .cell-btn {
+      position: relative;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06), 0 8px 20px rgba(0, 0, 0, 0.35);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .cell-btn:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.015);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
+      border-color: rgba(255, 255, 255, 0.22);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 12px 26px rgba(0, 0, 0, 0.45);
+    }
+
+    .cell-btn:active:not(:disabled) {
+      transform: translateY(0px) scale(0.97);
+    }
+
+    .cell-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .cell-winning {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)) !important;
+      border-color: rgba(255, 255, 255, 0.45) !important;
+      animation: winPulse 1.6s ease-in-out infinite;
+    }
+
+    .cell-vanishing {
+      border-color: rgba(244, 63, 94, 0.65) !important;
+      background: radial-gradient(circle at center, rgba(244, 63, 94, 0.14), rgba(255, 255, 255, 0.02)) !important;
+      animation: vanishPulse 1.15s ease-in-out infinite;
+    }
+
+    .cell-hint {
+      border-color: rgba(129, 140, 248, 0.85) !important;
+      box-shadow: 0 0 24px rgba(129, 140, 248, 0.45), inset 0 0 12px rgba(129, 140, 248, 0.25) !important;
+    }
+
+    @keyframes winPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.035); }
+    }
+
+    @keyframes vanishPulse {
+      0%, 100% { opacity: 0.95; }
+      50% { opacity: 0.45; }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.35) rotate(-12deg); opacity: 0; }
+      70% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .mark-animate {
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .glow-x {
+      filter: drop-shadow(0 0 12px var(--x-glow));
+    }
+
+    .glow-o {
+      filter: drop-shadow(0 0 12px var(--o-glow));
+    }
+
+    .seg-btn {
+      transition: all 0.2s ease;
+    }
+
+    .seg-btn.active {
+      background: rgba(255, 255, 255, 0.13);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    /* Custom Scrollbar for Move Log */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+  <!-- Ambient & FX Canvas Layer -->
+  <canvas id="fxCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Top Navigation & Control Bar -->
+  <header class="relative z-10 w-full max-w-6xl mx-auto px-4 pt-4 pb-2 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl glass-panel flex items-center justify-center border border-white/15 shadow-lg">
+        <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none">
+          <path d="M6 6L14 14M14 6L6 14" stroke="var(--x-color)" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="22" cy="22" r="4.5" stroke="var(--o-color)" stroke-width="3"/>
+          <path d="M16 4V28M4 16H28" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">AETHER <span class="font-light text-slate-400">XO</span></h1>
+          <span id="modeBadge" class="text-[10px] font-mono-code uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30">Classic 3×3</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Precision Tactical Grid &bull; Minimax Neural Engine</p>
+      </div>
+    </div>
+
+    <!-- Action Controls -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <!-- Theme Switcher -->
+      <div class="glass-panel rounded-xl p-1 flex items-center gap-1 text-xs">
+        <button id="themeObsidianBtn" type="button" class="seg-btn active px-2.5 py-1.5 rounded-lg border border-transparent font-medium flex items-center gap-1.5" title="Obsidian Gold & Cyan Theme">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+          <span class="hidden md:inline">Obsidian</span>
+        </button>
+        <button id="themeCyberBtn" type="button" class="seg-btn px-2.5 py-1.5 rounded-lg border border-transparent font-medium text-slate-300 flex items-center gap-1.5" title="Cyber Rose & Teal Theme">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+          <span class="hidden md:inline">Cyber</span>
+        </button>
+        <button id="themeEmeraldBtn" type="button" class="seg-btn px-2.5 py-1.5 rounded-lg border border-transparent font-medium text-slate-300 flex items-center gap-1.5" title="Emerald & Amber Studio Theme">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+          <span class="hidden md:inline">Emerald</span>
+        </button>
+      </div>
+
+      <!-- Sound Toggle -->
+      <button id="soundToggleBtn" type="button" class="glass-panel px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:border-white/25 transition flex items-center gap-1.5" title="Toggle Synthesized Sound (M)">
+        <svg id="soundOnIcon" class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+        <svg id="soundOffIcon" class="w-4 h-4 text-rose-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+        </svg>
+        <span id="soundLabel" class="hidden sm:inline">SFX On</span>
+      </button>
+
+      <!-- Rules / Shortcuts Modal Button -->
+      <button id="helpModalBtn" type="button" class="glass-panel px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:border-white/25 transition flex items-center gap-1.5" title="Game Modes & Keyboard Shortcuts">
+        <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="hidden sm:inline">Guide</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="relative z-10 w-full max-w-6xl mx-auto px-4 py-3 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+    <!-- Left Column: Game Configuration & Scoreboard (4 cols on desktop) -->
+    <section class="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-1">
+      <!-- Live Scoreboard Card -->
+      <div class="glass-panel rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Match Telemetry</span>
+          <button id="resetStatsBtn" type="button" class="text-[11px] text-slate-400 hover:text-rose-400 transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Reset Scores
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 text-center">
+          <!-- Player X Score -->
+          <div id="scoreCardX" class="rounded-xl p-3 bg-white/[0.03] border border-white/10 transition-all relative overflow-hidden">
+            <div class="flex items-center justify-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full" style="background: var(--x-color)"></span>
+              <span id="labelPlayerX" class="text-xs font-semibold text-slate-200 truncate">PLAYER X</span>
+            </div>
+            <div id="scoreX" class="text-2xl sm:text-3xl font-extrabold font-mono-code" style="color: var(--x-color)">0</div>
+            <div id="streakX" class="text-[10px] text-slate-400 mt-0.5">Streak: 0</div>
+          </div>
+
+          <!-- Draws -->
+          <div class="rounded-xl p-3 bg-white/[0.02] border border-white/5 flex flex-col justify-center">
+            <span class="text-xs font-semibold text-slate-400 mb-1">DRAWS</span>
+            <div id="scoreDraw" class="text-2xl sm:text-3xl font-extrabold font-mono-code text-slate-300">0</div>
+            <div id="roundCountLabel" class="text-[10px] text-slate-500 mt-0.5">Round 1</div>
+          </div>
+
+          <!-- Player O Score -->
+          <div id="scoreCardO" class="rounded-xl p-3 bg-white/[0.03] border border-white/10 transition-all relative overflow-hidden">
+            <div class="flex items-center justify-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full" style="background: var(--o-color)"></span>
+              <span id="labelPlayerO" class="text-xs font-semibold text-slate-200 truncate">AETHER AI</span>
+            </div>
+            <div id="scoreO" class="text-2xl sm:text-3xl font-extrabold font-mono-code" style="color: var(--o-color)">0</div>
+            <div id="streakO" class="text-[10px] text-slate-400 mt-0.5">Streak: 0</div>
+          </div>
+        </div>
+
+        <!-- Tactical Evaluation Bar -->
+        <div class="mt-4">
+          <div class="flex justify-between items-center text-[11px] font-mono-code text-slate-400 mb-1.5">
+            <span>X ADVANTAGE</span>
+            <span id="evalText" class="text-slate-200 font-semibold">EVEN (0.0)</span>
+            <span>O ADVANTAGE</span>
+          </div>
+          <div class="w-full h-2.5 rounded-full bg-slate-800/90 overflow-hidden flex border border-white/10 p-0.5">
+            <div id="evalBarX" class="h-full rounded-l-full transition-all duration-500" style="width: 50%; background: var(--x-color);"></div>
+            <div id="evalBarO" class="h-full rounded-r-full transition-all duration-500" style="width: 50%; background: var(--o-color);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode & Rules Configuration Card -->
+      <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <!-- Rule Variant -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Rule Variant</label>
+          <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5 text-xs">
+            <button id="variantClassicBtn" type="button" class="seg-btn active py-2 px-2 rounded-lg border border-transparent font-semibold text-center">
+              Classic 3×3
+            </button>
+            <button id="variantInfiniteBtn" type="button" class="seg-btn py-2 px-2 rounded-lg border border-transparent font-semibold text-slate-300 text-center relative">
+              Infinite 3-Cap
+              <span class="block text-[9px] font-normal text-amber-300/90">No Draws!</span>
+            </button>
+            <button id="variantGrid4Btn" type="button" class="seg-btn py-2 px-2 rounded-lg border border-transparent font-semibold text-slate-300 text-center">
+              Tactical 4×4
+              <span class="block text-[9px] font-normal text-sky-300/90">4-in-a-Row</span>
+            </button>
+          </div>
+          <p id="variantDesc" class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+            Standard 3×3 grid. Align 3 marks horizontally, vertically, or diagonally to claim victory.
+          </p>
+        </div>
+
+        <!-- Opponent Selection -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Opponent Mode</label>
+          <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5 text-xs">
+            <button id="oppAiBtn" type="button" class="seg-btn active py-2 px-3 rounded-lg border border-transparent font-semibold flex items-center justify-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              vs. Aether AI
+            </button>
+            <button id="oppHumanBtn" type="button" class="seg-btn py-2 px-3 rounded-lg border border-transparent font-semibold text-slate-300 flex items-center justify-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Pass &amp; Play (2P)
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Difficulty & First Turn Controls -->
+        <div id="aiSettingsPanel" class="space-y-3 pt-1 border-t border-white/10">
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="font-semibold uppercase tracking-wider text-slate-400">AI Intelligence</span>
+              <span id="aiDiffBadge" class="font-mono-code text-indigo-300">Grandmaster</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5 text-xs">
+              <button id="diffEasyBtn" type="button" class="seg-btn py-1.5 rounded-lg border border-transparent font-medium text-slate-300">Casual</button>
+              <button id="diffMediumBtn" type="button" class="seg-btn py-1.5 rounded-lg border border-transparent font-medium text-slate-300">Tactical</button>
+              <button id="diffHardBtn" type="button" class="seg-btn active py-1.5 rounded-lg border border-transparent font-medium">Unbeatable</button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-xs text-slate-300 font-medium">Play First As</span>
+            <div class="flex items-center gap-1.5 bg-black/30 p-1 rounded-xl border border-white/5 text-xs">
+              <button id="playAsXBtn" type="button" class="seg-btn active px-3 py-1 rounded-lg border border-transparent font-bold" style="color: var(--x-color)">X (1st)</button>
+              <button id="playAsOBtn" type="button" class="seg-btn px-3 py-1 rounded-lg border border-transparent font-bold text-slate-300" style="color: var(--o-color)">O (2nd)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Center Column: Interactive Game Board & Status Banner (5 cols on desktop) -->
+    <section class="lg:col-span-5 flex flex-col items-center justify-center order-1 lg:order-2">
+      <div class="w-full max-w-md glass-panel rounded-3xl p-4 sm:p-6 flex flex-col items-center relative overflow-hidden">
+
+        <!-- Turn & Status Indicator Header -->
+        <div class="w-full flex items-center justify-between mb-4 px-1">
+          <div class="flex items-center gap-2.5">
+            <div id="turnPulseDot" class="w-3 h-3 rounded-full animate-pulse" style="background: var(--x-color); box-shadow: 0 0 12px var(--x-color)"></div>
+            <div>
+              <div id="statusHeadline" class="text-sm sm:text-base font-bold tracking-tight text-white">Player X's Turn</div>
+              <div id="statusSubline" class="text-[11px] text-slate-400">Select any cell or press 1–9 on keyboard</div>
+            </div>
+          </div>
+
+          <!-- Infinite Mode Piece Counter Pill -->
+          <div id="infiniteCounterPill" class="hidden px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-400/30 text-[11px] font-mono-code text-rose-300">
+            Cap: <span id="activeMarksCount">0/3</span>
+          </div>
+        </div>
+
+        <!-- Board Container with Laser Overlay Canvas -->
+        <div id="boardWrapper" class="relative w-full aspect-square max-w-[360px] flex items-center justify-center my-1">
+          <!-- Dynamic Grid Container -->
+          <div id="boardGrid" class="w-full h-full grid grid-cols-3 gap-3 sm:gap-3.5 z-10">
+            <!-- Populated dynamically by JS for 3x3 or 4x4 -->
+          </div>
+
+          <!-- Laser & Particle Overlay Canvas -->
+          <canvas id="boardOverlayCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-20"></canvas>
+        </div>
+
+        <!-- Bottom Tactical Toolbar -->
+        <div class="w-full grid grid-cols-3 gap-2.5 mt-5 pt-3 border-t border-white/10">
+          <button id="undoMoveBtn" type="button" disabled class="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-35 disabled:pointer-events-none border border-white/10 text-xs font-semibold text-slate-200 transition flex items-center justify-center gap-1.5" title="Undo Last Turn (U)">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            <span>Undo</span>
+          </button>
+
+          <button id="hintBtn" type="button" class="px-3 py-2.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 disabled:opacity-35 disabled:pointer-events-none border border-indigo-400/30 text-xs font-semibold text-indigo-200 transition flex items-center justify-center gap-1.5" title="Compute Optimal Tactical Move (H)">
+            <svg class="w-4 h-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <span>AI Hint</span>
+          </button>
+
+          <button id="newRoundBtn" type="button" class="px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/80 to-sky-500/80 hover:from-amber-400 hover:to-sky-400 text-slate-950 font-bold text-xs shadow-lg transition flex items-center justify-center gap-1.5" title="Start Fresh Round (R)">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>New Round</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Move Log & Tactical Insights (3 cols on desktop) -->
+    <section class="lg:col-span-3 flex flex-col gap-4 order-3">
+      <!-- Move History Panel -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col h-[270px]">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Move Sequence</span>
+          <span id="moveCounterBadge" class="text-[11px] font-mono-code px-2 py-0.5 rounded bg-white/5 text-slate-300">0 Moves</span>
+        </div>
+
+        <div id="moveLogList" class="flex-1 overflow-y-auto space-y-1.5 pr-1 text-xs font-mono-code">
+          <div class="text-slate-500 text-center py-12 italic font-sans">
+            No moves recorded yet.<br/>Click any square to begin.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tactical Coach / Engine Readout -->
+      <div class="glass-panel rounded-2xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-300">Neural Coach Readout</span>
+        </div>
+        <p id="coachReadout" class="text-xs text-slate-300 leading-relaxed">
+          Center control (<span class="font-mono-code text-white">B2</span>) offers 4 winning vectors in Classic 3×3. In <span class="text-amber-300 font-medium">Infinite 3-Cap</span> mode, each player may hold only 3 active marks—placing a 4th vaporizes your oldest mark!
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 w-full max-w-6xl mx-auto px-4 py-3 text-center sm:flex sm:items-center sm:justify-between text-[11px] text-slate-500">
+    <div>AETHER XO &bull; Interactive Canvas + Web Audio Synthesizer</div>
+    <div class="mt-1 sm:mt-0 font-mono-code">Shortcuts: [1-9] Place Mark &bull; [H] Hint &bull; [U] Undo &bull; [R] Restart &bull; [M] Mute</div>
+  </footer>
+
+  <!-- Guide & Shortcuts Modal -->
+  <div id="helpModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full rounded-3xl p-6 border border-white/15 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+          AETHER XO — Tactical Field Guide
+        </h2>
+        <button id="closeHelpModalBtn" type="button" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+          <div class="font-bold text-amber-300 mb-1">1. Classic 3×3 Mode</div>
+          Traditional Tic-Tac-Toe rules. First player to align 3 marks horizontally, vertically, or diagonally wins the round.
+        </div>
+
+        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+          <div class="font-bold text-rose-300 mb-1">2. Infinite 3-Cap (Vanishing Mode)</div>
+          Each player can only have <strong>3 marks on the grid at once</strong>. When you have 3 marks placed, your oldest mark pulses red—placing your 4th mark immediately removes your oldest mark! Draws are impossible; every match ends in a decisive tactical victory.
+        </div>
+
+        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+          <div class="font-bold text-sky-300 mb-1">3. Tactical 4×4 Grid</div>
+          Expanded 16-cell battleground. Align <strong>4 marks in a row</strong> horizontally, vertically, or diagonally to win.
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1 font-mono-code text-[11px]">
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5"><span class="text-indigo-300">[1–9]</span> Place on 3×3</div>
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5"><span class="text-indigo-300">[H]</span> Show AI Best Hint</div>
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5"><span class="text-indigo-300">[U]</span> Undo Last Turn</div>
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5"><span class="text-indigo-300">[R]</span> Start New Round</div>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button id="gotItHelpBtn" type="button" class="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs transition">
+          Got It, Let's Play
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl glass-panel border border-white/20 text-xs font-medium text-white shadow-xl transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none">
+    Notification
+  </div>
+
+  <script>
+    // =========================================================================
+    // SYNTHESIZED WEB AUDIO ENGINE (No external audio files required)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.14, gainVal = 0.12, delay = 0) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime + delay;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(gainVal, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.02);
+        } catch (e) {
+          // Ignore audio context restrictions
+        }
+      }
+
+      playMoveX() {
+        this.playTone(392.0, 'triangle', 0.14, 0.14, 0);
+        this.playTone(587.33, 'sine', 0.18, 0.11, 0.04);
+      }
+
+      playMoveO() {
+        this.playTone(523.25, 'sine', 0.14, 0.13, 0);
+        this.playTone(659.25, 'triangle', 0.18, 0.10, 0.045);
+      }
+
+      playVanish() {
+        this.playTone(310, 'sawtooth', 0.12, 0.06, 0);
+        this.playTone(220, 'sine', 0.15, 0.08, 0.04);
+      }
+
+      playHint() {
+        this.playTone(659.25, 'sine', 0.12, 0.09, 0);
+        this.playTone(880.0, 'sine', 0.18, 0.09, 0.06);
+      }
+
+      playWin() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, idx) => {
+          this.playTone(n, 'triangle', 0.32, 0.14, idx * 0.08);
+        });
+      }
+
+      playDraw() {
+        this.playTone(349.23, 'sine', 0.2, 0.1, 0);
+        this.playTone(329.63, 'triangle', 0.28, 0.1, 0.1);
+      }
+
+      playClick() {
+        this.playTone(800, 'sine', 0.045, 0.05, 0);
+      }
+    }
+
+    const sfx = new SoundEngine();
+
+    // =========================================================================
+    // AMBIENT & LASER PARTICLE CANVAS CONTROLLER
+    // =========================================================================
+    const fxCanvas = document.getElementById('fxCanvas');
+    const fxCtx = fxCanvas.getContext('2d');
+    const overlayCanvas = document.getElementById('boardOverlayCanvas');
+    const overlayCtx = overlayCanvas.getContext('2d');
+
+    let ambientParticles = [];
+    let burstParticles = [];
+    let winLaserState = null; // { startX, startY, endX, endY, color, progress }
+
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      fxCanvas.width = window.innerWidth * dpr;
+      fxCanvas.height = window.innerHeight * dpr;
+      fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const wrapper = document.getElementById('boardWrapper');
+      if (wrapper) {
+        const rect = wrapper.getBoundingClientRect();
+        overlayCanvas.width = rect.width * dpr;
+        overlayCanvas.height = rect.height * dpr;
+        overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+    }
+
+    function initAmbientParticles() {
+      ambientParticles = [];
+      const count = Math.min(36, Math.floor(window.innerWidth / 35));
+      for (let i = 0; i < count; i++) {
+        ambientParticles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          r: Math.random() * 1.8 + 0.6,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          alpha: Math.random() * 0.35 + 0.1
+        });
+      }
+    }
+
+    function spawnCellBurst(cellIndex, colorHex) {
+      const cellEl = document.querySelector(`[data-cell-index="${cellIndex}"]`);
+      const wrapperEl = document.getElementById('boardWrapper');
+      if (!cellEl || !wrapperEl) return;
+      const cellRect = cellEl.getBoundingClientRect();
+      const wrapRect = wrapperEl.getBoundingClientRect();
+      const cx = cellRect.left - wrapRect.left + cellRect.width / 2;
+      const cy = cellRect.top - wrapRect.top + cellRect.height / 2;
+
+      for (let i = 0; i < 22; i++) {
+        const angle = (Math.PI * 2 * i) / 22 + (Math.random() - 0.5) * 0.3;
+        const speed = 1.6 + Math.random() * 3.4;
+        burstParticles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          decay: 0.024 + Math.random() * 0.02,
+          size: 2.2 + Math.random() * 2.5,
+          color: colorHex
+        });
+      }
+    }
+
+    function triggerWinLaser(winCombo, winnerMark) {
+      const wrapperEl = document.getElementById('boardWrapper');
+      const firstCell = document.querySelector(`[data-cell-index="${winCombo[0]}"]`);
+      const lastCell = document.querySelector(`[data-cell-index="${winCombo[winCombo.length - 1]}"]`);
+      if (!wrapperEl || !firstCell || !lastCell) return;
+
+      const wrapRect = wrapperEl.getBoundingClientRect();
+      const r1 = firstCell.getBoundingClientRect();
+      const r2 = lastCell.getBoundingClientRect();
+
+      const style = getComputedStyle(document.documentElement);
+      const color = winnerMark === 'X'
+        ? style.getPropertyValue('--x-color').trim()
+        : style.getPropertyValue('--o-color').trim();
+
+      winLaserState = {
+        startX: r1.left - wrapRect.left + r1.width / 2,
+        startY: r1.top - wrapRect.top + r1.height / 2,
+        endX: r2.left - wrapRect.left + r2.width / 2,
+        endY: r2.top - wrapRect.top + r2.height / 2,
+        color,
+        progress: 0,
+        combo: winCombo,
+        winnerMark
+      };
+
+      winCombo.forEach((idx) => spawnCellBurst(idx, color));
+    }
+
+    function animateCanvases() {
+      // 1. Ambient background canvas
+      fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      for (const p of ambientParticles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = window.innerWidth;
+        if (p.x > window.innerWidth) p.x = 0;
+        if (p.y < 0) p.y = window.innerHeight;
+        if (p.y > window.innerHeight) p.y = 0;
+
+        fxCtx.beginPath();
+        fxCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        fxCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        fxCtx.fill();
+      }
+
+      // 2. Board overlay canvas (burst particles + winning laser line)
+      const wrapRect = document.getElementById('boardWrapper').getBoundingClientRect();
+      overlayCtx.clearRect(0, 0, wrapRect.width, wrapRect.height);
+
+      for (let i = burstParticles.length - 1; i >= 0; i--) {
+        const bp = burstParticles[i];
+        bp.x += bp.vx;
+        bp.y += bp.vy;
+        bp.vx *= 0.95;
+        bp.vy *= 0.95;
+        bp.life -= bp.decay;
+        if (bp.life <= 0) {
+          burstParticles.splice(i, 1);
+          continue;
+        }
+        overlayCtx.save();
+        overlayCtx.globalAlpha = Math.max(0, bp.life);
+        overlayCtx.fillStyle = bp.color;
+        overlayCtx.shadowColor = bp.color;
+        overlayCtx.shadowBlur = 10;
+        overlayCtx.beginPath();
+        overlayCtx.arc(bp.x, bp.y, bp.size, 0, Math.PI * 2);
+        overlayCtx.fill();
+        overlayCtx.restore();
+      }
+
+      if (winLaserState) {
+        winLaserState.progress = Math.min(1, winLaserState.progress + 0.065);
+        const curX = winLaserState.startX + (winLaserState.endX - winLaserState.startX) * winLaserState.progress;
+        const curY = winLaserState.startY + (winLaserState.endY - winLaserState.startY) * winLaserState.progress;
+
+        overlayCtx.save();
+        overlayCtx.lineCap = 'round';
+        overlayCtx.strokeStyle = winLaserState.color;
+        overlayCtx.shadowColor = winLaserState.color;
+        overlayCtx.shadowBlur = 22;
+        overlayCtx.lineWidth = 7;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(winLaserState.startX, winLaserState.startY);
+        overlayCtx.lineTo(curX, curY);
+        overlayCtx.stroke();
+
+        // Inner white core
+        overlayCtx.strokeStyle = '#ffffff';
+        overlayCtx.lineWidth = 2.5;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(winLaserState.startX, winLaserState.startY);
+        overlayCtx.lineTo(curX, curY);
+        overlayCtx.stroke();
+        overlayCtx.restore();
+      }
+
+      requestAnimationFrame(animateCanvases);
+    }
+
+    // =========================================================================
+    // GAME STATE & TACTICAL ENGINE
+    // =========================================================================
+    const state = {
+      variant: 'classic',     // 'classic' (3x3), 'infinite' (3x3 vanishing), 'grid4' (4x4)
+      opponent: 'ai',         // 'ai' or 'human'
+      difficulty: 'hard',     // 'easy', 'medium', 'hard'
+      humanMark: 'X',         // 'X' or 'O'
+      gridSize: 3,
+      board: Array(9).fill(null),
+      currentTurn: 'X',
+      isGameOver: false,
+      winner: null,
+      winCombo: null,
+      moveHistory: [],        // Stack of snapshots for undo & move log
+      xQueue: [],             // Cell indices in order placed (for Infinite 3-cap mode)
+      oQueue: [],
+      hintCell: null,
+      aiTimer: null,
+      roundNumber: 1,
+      stats: {
+        X: 0,
+        O: 0,
+        draw: 0,
+        streakX: 0,
+        streakO: 0
+      }
+    };
+
+    function loadSavedStats() {
+      try {
+        const raw = localStorage.getItem('aether_xo_stats_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.X === 'number') {
+            state.stats = { ...state.stats, ...parsed };
+          }
+        }
+      } catch (e) {
+        // Ignore sandbox storage errors
+      }
+      updateScoreboardUI();
+    }
+
+    function saveStats() {
+      try {
+        localStorage.setItem('aether_xo_stats_v1', JSON.stringify(state.stats));
+      } catch (e) {
+        // Ignore sandbox storage errors
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastBanner');
+      toast.textContent = msg;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2400);
+    }
+
+    function getWinningLines(size) {
+      const lines = [];
+      // Rows & Cols
+      for (let r = 0; r < size; r++) {
+        const row = [];
+        const col = [];
+        for (let c = 0; c < size; c++) {
+          row.push(r * size + c);
+          col.push(c * size + r);
+        }
+        lines.push(row, col);
+      }
+      // Diagonals
+      const d1 = [];
+      const d2 = [];
+      for (let i = 0; i < size; i++) {
+        d1.push(i * size + i);
+        d2.push(i * size + (size - 1 - i));
+      }
+      lines.push(d1, d2);
+      return lines;
+    }
+
+    function checkWinner(board, size) {
+      const lines = getWinningLines(size);
+      for (const line of lines) {
+        const first = board[line[0]];
+        if (first && line.every((idx) => board[idx] === first)) {
+          return { winner: first, combo: line };
+        }
+      }
+      if (board.every((cell) => cell !== null)) {
+        return { winner: 'DRAW', combo: null };
+      }
+      return null;
+    }
+
+    function coordName(index, size) {
+      const rows = ['A', 'B', 'C', 'D'];
+      const r = Math.floor(index / size);
+      const c = (index % size) + 1;
+      return `${rows[r]}${c}`;
+    }
+
+    // SVG Mark Templates
+    function getMarkSVG(mark) {
+      if (mark === 'X') {
+        return `
+          <svg class="w-3/5 h-3/5 mark-animate glow-x" viewBox="0 0 64 64" fill="none">
+            <path d="M14 14L50 50M50 14L14 50" stroke="var(--x-color)" stroke-width="7.5" stroke-linecap="round" />
+          </svg>
+        `;
+      }
+      return `
+        <svg class="w-3/5 h-3/5 mark-animate glow-o" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="19" stroke="var(--o-color)" stroke-width="7.5" stroke-linecap="round" />
+        </svg>
+      `;
+    }
+
+    // Build / Render the Board Grid
+    function renderBoard() {
+      const gridEl = document.getElementById('boardGrid');
+      const size = state.gridSize;
+      gridEl.className = `w-full h-full grid ${size === 4 ? 'grid-cols-4 gap-2.5' : 'grid-cols-3 gap-3 sm:gap-3.5'} z-10`;
+      gridEl.innerHTML = '';
+
+      // Determine which piece will vanish on the current player's move in Infinite mode
+      let vanishingIndex = null;
+      if (state.variant === 'infinite' && !state.isGameOver) {
+        if (state.currentTurn === 'X' && state.xQueue.length >= 3) {
+          vanishingIndex = state.xQueue[0];
+        } else if (state.currentTurn === 'O' && state.oQueue.length >= 3) {
+          vanishingIndex = state.oQueue[0];
+        }
+      }
+
+      const isAiTurn = state.opponent === 'ai' && state.currentTurn !== state.humanMark && !state.isGameOver;
+
+      state.board.forEach((mark, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.cellIndex = idx;
+        btn.setAttribute('aria-label', `Grid cell ${coordName(idx, size)}`);
+        btn.className = 'cell-btn rounded-2xl flex items-center justify-center relative aspect-square';
+
+        if (mark !== null || state.isGameOver || isAiTurn) {
+          btn.disabled = true;
+        }
+
+        if (state.winCombo && state.winCombo.includes(idx)) {
+          btn.classList.add('cell-winning');
+        } else if (vanishingIndex === idx) {
+          btn.classList.add('cell-vanishing');
+        } else if (state.hintCell === idx) {
+          btn.classList.add('cell-hint');
+        }
+
+        // Coordinate watermark in corner
+        const coordBadge = document.createElement('span');
+        coordBadge.className = 'absolute top-1.5 left-2 text-[9px] font-mono-code text-white/20 pointer-events-none';
+        coordBadge.textContent = size === 3 ? `${idx + 1}` : coordName(idx, size);
+        btn.appendChild(coordBadge);
+
+        if (vanishingIndex === idx) {
+          const warnTag = document.createElement('span');
+          warnTag.className = 'absolute bottom-1 right-1.5 text-[8px] font-mono-code uppercase px-1 rounded bg-rose-500/30 text-rose-200';
+          warnTag.textContent = 'NEXT OUT';
+          btn.appendChild(warnTag);
+        }
+
+        if (mark) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'w-full h-full flex items-center justify-center';
+          wrapper.innerHTML = getMarkSVG(mark);
+          btn.appendChild(wrapper);
+        }
+
+        btn.addEventListener('click', () => handleCellClick(idx));
+        gridEl.appendChild(btn);
+      });
+
+      // Update Infinite Counter Pill
+      const pill = document.getElementById('infiniteCounterPill');
+      if (state.variant === 'infinite') {
+        pill.classList.remove('hidden');
+        const activeCount = state.currentTurn === 'X' ? state.xQueue.length : state.oQueue.length;
+        document.getElementById('activeMarksCount').textContent = `${activeCount}/3`;
+      } else {
+        pill.classList.add('hidden');
+      }
+
+      // Update toolbar buttons
+      document.getElementById('undoMoveBtn').disabled = state.moveHistory.length === 0 || isAiTurn;
+      document.getElementById('hintBtn').disabled = state.isGameOver || isAiTurn;
+    }
+
+    function updateStatusBanner() {
+      const headline = document.getElementById('statusHeadline');
+      const subline = document.getElementById('statusSubline');
+      const dot = document.getElementById('turnPulseDot');
+      const style = getComputedStyle(document.documentElement);
+      const xCol = style.getPropertyValue('--x-color').trim();
+      const oCol = style.getPropertyValue('--o-color').trim();
+
+      const cardX = document.getElementById('scoreCardX');
+      const cardO = document.getElementById('scoreCardO');
+      cardX.style.borderColor = 'rgba(255,255,255,0.08)';
+      cardO.style.borderColor = 'rgba(255,255,255,0.08)';
+
+      if (state.isGameOver) {
+        if (state.winner === 'DRAW') {
+          headline.textContent = 'Stalemate — Tactical Draw';
+          subline.textContent = 'Neither side yielded an opening. Start a new round!';
+          dot.style.background = '#94a3b8';
+          dot.style.boxShadow = '0 0 10px #94a3b8';
+        } else {
+          const winnerName = getPlayerName(state.winner);
+          headline.textContent = `${winnerName} Claims Victory!`;
+          subline.textContent = `Winning alignment secured along [${state.winCombo.map(i => coordName(i, state.gridSize)).join(' → ')}]`;
+          const col = state.winner === 'X' ? xCol : oCol;
+          dot.style.background = col;
+          dot.style.boxShadow = `0 0 14px ${col}`;
+          if (state.winner === 'X') cardX.style.borderColor = xCol;
+          else cardO.style.borderColor = oCol;
+        }
+        return;
+      }
+
+      const activeCol = state.currentTurn === 'X' ? xCol : oCol;
+      dot.style.background = activeCol;
+      dot.style.boxShadow = `0 0 12px ${activeCol}`;
+      if (state.currentTurn === 'X') cardX.style.borderColor = xCol;
+      else cardO.style.borderColor = oCol;
+
+      const isAiTurn = state.opponent === 'ai' && state.currentTurn !== state.humanMark;
+      if (isAiTurn) {
+        headline.textContent = 'Aether AI is Computing...';
+        subline.textContent = 'Evaluating minimax game tree & positional vectors';
+      } else {
+        const name = getPlayerName(state.currentTurn);
+        headline.textContent = `${name}'s Turn (${state.currentTurn})`;
+        if (state.variant === 'infinite' && ((state.currentTurn === 'X' && state.xQueue.length === 3) || (state.currentTurn === 'O' && state.oQueue.length === 3))) {
+          subline.textContent = 'Warning: Your oldest pulsing mark will vanish on placement!';
+        } else {
+          subline.textContent = state.gridSize === 3 ? 'Click any open cell or press 1–9' : 'Click any open coordinate on the 4×4 grid';
+        }
+      }
+    }
+
+    function getPlayerName(mark) {
+      if (state.opponent === 'human') {
+        return mark === 'X' ? 'Player X' : 'Player O';
+      }
+      return mark === state.humanMark ? 'You' : 'Aether AI';
+    }
+
+    function updateScoreboardUI() {
+      document.getElementById('scoreX').textContent = state.stats.X;
+      document.getElementById('scoreO').textContent = state.stats.O;
+      document.getElementById('scoreDraw').textContent = state.stats.draw;
+      document.getElementById('streakX').textContent = `Streak: ${state.stats.streakX}`;
+      document.getElementById('streakO').textContent = `Streak: ${state.stats.streakO}`;
+      document.getElementById('roundCountLabel').textContent = `Round ${state.roundNumber}`;
+
+      if (state.opponent === 'human') {
+        document.getElementById('labelPlayerX').textContent = 'PLAYER X';
+        document.getElementById('labelPlayerO').textContent = 'PLAYER O';
+      } else {
+        document.getElementById('labelPlayerX').textContent = state.humanMark === 'X' ? 'YOU (X)' : 'AETHER AI (X)';
+        document.getElementById('labelPlayerO').textContent = state.humanMark === 'O' ? 'YOU (O)' : 'AETHER AI (O)';
+      }
+    }
+
+    function renderMoveLog() {
+      const listEl = document.getElementById('moveLogList');
+      const badgeEl = document.getElementById('moveCounterBadge');
+      badgeEl.textContent = `${state.moveHistory.length} ${state.moveHistory.length === 1 ? 'Move' : 'Moves'}`;
+
+      if (state.moveHistory.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-slate-500 text-center py-12 italic font-sans">
+            No moves recorded yet.<br/>Click any square to begin.
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = '';
+      state.moveHistory.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/5';
+        const colorStyle = item.mark === 'X' ? 'color: var(--x-color)' : 'color: var(--o-color)';
+        const vanishNote = item.vanishedCell !== null
+          ? `<span class="text-rose-400 text-[10px]">(-${coordName(item.vanishedCell, state.gridSize)})</span>`
+          : '';
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500">#${index + 1}</span>
+            <span class="font-bold" style="${colorStyle}">${item.mark}</span>
+            <span class="text-slate-300">&rarr; ${coordName(item.cell, state.gridSize)}</span>
+          </div>
+          <div>${vanishNote}</div>
+        `;
+        listEl.appendChild(row);
+      });
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    // =========================================================================
+    // HANDLE MOVE EXECUTION
+    // =========================================================================
+    function handleCellClick(cellIndex) {
+      if (state.isGameOver || state.board[cellIndex] !== null) return;
+      if (state.opponent === 'ai' && state.currentTurn !== state.humanMark) return;
+
+      executeMove(cellIndex);
+    }
+
+    function executeMove(cellIndex) {
+      if (state.isGameOver || state.board[cellIndex] !== null) return;
+
+      const mark = state.currentTurn;
+      let vanishedCell = null;
+
+      // Save snapshot for Undo
+      const snapshot = {
+        board: [...state.board],
+        currentTurn: state.currentTurn,
+        xQueue: [...state.xQueue],
+        oQueue: [...state.oQueue],
+        mark,
+        cell: cellIndex,
+        vanishedCell: null
+      };
+
+      // Infinite 3-Cap Vanishing Logic
+      if (state.variant === 'infinite') {
+        const queue = mark === 'X' ? state.xQueue : state.oQueue;
+        if (queue.length >= 3) {
+          vanishedCell = queue.shift();
+          state.board[vanishedCell] = null;
+          snapshot.vanishedCell = vanishedCell;
+          sfx.playVanish();
+        }
+        queue.push(cellIndex);
+      }
+
+      state.board[cellIndex] = mark;
+      state.hintCell = null;
+      state.moveHistory.push(snapshot);
+
+      // Play SFX & Burst Particles
+      const style = getComputedStyle(document.documentElement);
+      const burstColor = mark === 'X'
+        ? style.getPropertyValue('--x-color').trim()
+        : style.getPropertyValue('--o-color').trim();
+      if (mark === 'X') sfx.playMoveX();
+      else sfx.playMoveO();
+      spawnCellBurst(cellIndex, burstColor);
+
+      // Check Win / Draw
+      const outcome = checkWinner(state.board, state.gridSize);
+      if (outcome) {
+        state.isGameOver = true;
+        state.winner = outcome.winner;
+        state.winCombo = outcome.combo;
+
+        if (outcome.winner === 'DRAW') {
+          state.stats.draw++;
+          state.stats.streakX = 0;
+          state.stats.streakO = 0;
+          sfx.playDraw();
+          updateCoachReadout('Round ended in a balanced stalemate. Try Infinite 3-Cap mode to eliminate draws!');
+        } else {
+          state.stats[outcome.winner]++;
+          if (outcome.winner === 'X') {
+            state.stats.streakX++;
+            state.stats.streakO = 0;
+          } else {
+            state.stats.streakO++;
+            state.stats.streakX = 0;
+          }
+          sfx.playWin();
+          renderBoard();
+          triggerWinLaser(outcome.combo, outcome.winner);
+          updateCoachReadout(`${getPlayerName(outcome.winner)} completed a decisive ${state.gridSize}-in-a-row vector!`);
+        }
+
+        saveStats();
+        updateScoreboardUI();
+        renderBoard();
+        updateStatusBanner();
+        renderMoveLog();
+        updateEvaluationBar();
+        return;
+      }
+
+      // Switch turn
+      state.currentTurn = mark === 'X' ? 'O' : 'X';
+      renderBoard();
+      updateStatusBanner();
+      renderMoveLog();
+      updateEvaluationBar();
+
+      // Trigger AI if applicable
+      if (state.opponent === 'ai' && state.currentTurn !== state.humanMark && !state.isGameOver) {
+        clearTimeout(state.aiTimer);
+        state.aiTimer = setTimeout(() => {
+          makeAiMove();
+        }, 360);
+      }
+    }
+
+    // =========================================================================
+    // MINIMAX & HEURISTIC AI ENGINE (Supports Classic 3x3, Infinite 3-Cap, 4x4)
+    // =========================================================================
+    function simulatePlace(board, xQ, oQ, cell, mark, variant) {
+      const nextBoard = [...board];
+      const nextXQ = [...xQ];
+      const nextOQ = [...oQ];
+      if (variant === 'infinite') {
+        const q = mark === 'X' ? nextXQ : nextOQ;
+        if (q.length >= 3) {
+          const removed = q.shift();
+          nextBoard[removed] = null;
+        }
+        q.push(cell);
+      }
+      nextBoard[cell] = mark;
+      return { board: nextBoard, xQ: nextXQ, oQ: nextOQ };
+    }
+
+    function evaluatePositionHeuristic(board, size) {
+      const lines = getWinningLines(size);
+      let score = 0;
+      for (const line of lines) {
+        let xCount = 0;
+        let oCount = 0;
+        for (const idx of line) {
+          if (board[idx] === 'X') xCount++;
+          else if (board[idx] === 'O') oCount++;
+        }
+        if (xCount > 0 && oCount === 0) {
+          score += Math.pow(10, xCount);
+        } else if (oCount > 0 && xCount === 0) {
+          score -= Math.pow(10, oCount);
+        }
+      }
+      return score;
+    }
+
+    function minimax(board, xQ, oQ, depth, maxDepth, isMaximizing, alpha, beta, size, variant) {
+      const res = checkWinner(board, size);
+      if (res) {
+        if (res.winner === 'X') return 1000 - depth * 10;
+        if (res.winner === 'O') return -1000 + depth * 10;
+        return 0;
+      }
+      if (depth >= maxDepth) {
+        return evaluatePositionHeuristic(board, size);
+      }
+
+      const emptyCells = [];
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === null) emptyCells.push(i);
+      }
+
+      if (isMaximizing) {
+        let best = -Infinity;
+        for (const cell of emptyCells) {
+          const sim = simulatePlace(board, xQ, oQ, cell, 'X', variant);
+          const val = minimax(sim.board, sim.xQ, sim.oQ, depth + 1, maxDepth, false, alpha, beta, size, variant);
+          best = Math.max(best, val);
+          alpha = Math.max(alpha, best);
+          if (beta <= alpha) break;
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (const cell of emptyCells) {
+          const sim = simulatePlace(board, xQ, oQ, cell, 'O', variant);
+          const val = minimax(sim.board, sim.xQ, sim.oQ, depth + 1, maxDepth, true, alpha, beta, size, variant);
+          best = Math.min(best, val);
+          beta = Math.min(beta, best);
+          if (beta <= alpha) break;
+        }
+        return best;
+      }
+    }
+
+    function computeBestMove(forMark, difficultyLevel = 'hard') {
+      const emptyCells = [];
+      for (let i = 0; i < state.board.length; i++) {
+        if (state.board[i] === null) emptyCells.push(i);
+      }
+      if (emptyCells.length === 0) return null;
+
+      // Easy mode: 60% random move, 40% optimal
+      if (difficultyLevel === 'easy' && Math.random() < 0.6) {
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      }
+      // Medium mode: 28% suboptimal move
+      if (difficultyLevel === 'medium' && Math.random() < 0.28) {
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      }
+
+      // Opening book optimization for empty board
+      if (emptyCells.length === state.board.length) {
+        if (state.gridSize === 3) return 4; // Center B2
+        return 5; // Inner center on 4x4
+      }
+
+      const maxDepth = state.gridSize === 4 ? 4 : (state.variant === 'infinite' ? 6 : 9);
+      const isMax = forMark === 'X';
+      let bestScore = isMax ? -Infinity : Infinity;
+      let bestCandidates = [];
+
+      for (const cell of emptyCells) {
+        const sim = simulatePlace(state.board, state.xQueue, state.oQueue, cell, forMark, state.variant);
+        const score = minimax(
+          sim.board,
+          sim.xQ,
+          sim.oQ,
+          0,
+          maxDepth,
+          !isMax,
+          -Infinity,
+          Infinity,
+          state.gridSize,
+          state.variant
+        );
+
+        if (isMax) {
+          if (score > bestScore) {
+            bestScore = score;
+            bestCandidates = [cell];
+          } else if (score === bestScore) {
+            bestCandidates.push(cell);
+          }
+        } else {
+          if (score < bestScore) {
+            bestScore = score;
+            bestCandidates = [cell];
+          } else if (score === bestScore) {
+            bestCandidates.push(cell);
+          }
+        }
+      }
+
+      const chosen = bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
+      return { cell: chosen, score: bestScore };
+    }
+
+    function makeAiMove() {
+      if (state.isGameOver) return;
+      const aiMark = state.currentTurn;
+      const result = computeBestMove(aiMark, state.difficulty);
+      const targetCell = typeof result === 'number' ? result : (result ? result.cell : null);
+      if (targetCell !== null && targetCell !== undefined) {
+        executeMove(targetCell);
+      }
+    }
+
+    function updateEvaluationBar() {
+      const barX = document.getElementById('evalBarX');
+      const barO = document.getElementById('evalBarO');
+      const evalText = document.getElementById('evalText');
+
+      if (state.isGameOver) {
+        if (state.winner === 'X') {
+          barX.style.width = '100%';
+          barO.style.width = '0%';
+          evalText.textContent = 'X VICTORY (+10.0)';
+        } else if (state.winner === 'O') {
+          barX.style.width = '0%';
+          barO.style.width = '100%';
+          evalText.textContent = 'O VICTORY (-10.0)';
+        } else {
+          barX.style.width = '50%';
+          barO.style.width = '50%';
+          evalText.textContent = 'DRAW (0.0)';
+        }
+        return;
+      }
+
+      const hScore = evaluatePositionHeuristic(state.board, state.gridSize);
+      const clamped = Math.max(-120, Math.min(120, hScore));
+      const xPercent = Math.round(50 + (clamped / 120) * 42);
+      const oPercent = 100 - xPercent;
+      barX.style.width = `${xPercent}%`;
+      barO.style.width = `${oPercent}%`;
+
+      if (Math.abs(clamped) < 8) {
+        evalText.textContent = 'EVEN (0.0)';
+      } else if (clamped > 0) {
+        evalText.textContent = `X +${(clamped / 20).toFixed(1)}`;
+      } else {
+        evalText.textContent = `O +${(Math.abs(clamped) / 20).toFixed(1)}`;
+      }
+    }
+
+    function updateCoachReadout(customMessage) {
+      const el = document.getElementById('coachReadout');
+      if (customMessage) {
+        el.textContent = customMessage;
+      }
+    }
+
+    // =========================================================================
+    // CONTROLS: NEW ROUND, UNDO, HINT, MODE SWITCHES
+    // =========================================================================
+    function startNewRound(incrementRound = true) {
+      clearTimeout(state.aiTimer);
+      winLaserState = null;
+      if (incrementRound && state.moveHistory.length > 0) {
+        state.roundNumber++;
+      }
+      state.gridSize = state.variant === 'grid4' ? 4 : 3;
+      state.board = Array(state.gridSize * state.gridSize).fill(null);
+      state.currentTurn = 'X';
+      state.isGameOver = false;
+      state.winner = null;
+      state.winCombo = null;
+      state.moveHistory = [];
+      state.xQueue = [];
+      state.oQueue = [];
+      state.hintCell = null;
+
+      updateScoreboardUI();
+      renderBoard();
+      updateStatusBanner();
+      renderMoveLog();
+      updateEvaluationBar();
+      resizeCanvases();
+
+      if (state.opponent === 'ai' && state.humanMark === 'O') {
+        state.aiTimer = setTimeout(() => {
+          makeAiMove();
+        }, 380);
+      }
+    }
+
+    function handleUndo() {
+      if (state.moveHistory.length === 0) return;
+      clearTimeout(state.aiTimer);
+      winLaserState = null;
+
+      // If playing vs AI, undo both AI's move and human's move so it returns to human's turn
+      const stepsToUndo = (state.opponent === 'ai' && state.moveHistory.length >= 2 && state.currentTurn === state.humanMark) ? 2 : 1;
+
+      let snap = null;
+      for (let i = 0; i < stepsToUndo; i++) {
+        if (state.moveHistory.length > 0) {
+          snap = state.moveHistory.pop();
+        }
+      }
+
+      if (snap) {
+        state.board = [...snap.board];
+        state.currentTurn = snap.currentTurn;
+        state.xQueue = [...snap.xQueue];
+        state.oQueue = [...snap.oQueue];
+        state.isGameOver = false;
+        state.winner = null;
+        state.winCombo = null;
+        state.hintCell = null;
+        sfx.playClick();
+        renderBoard();
+        updateStatusBanner();
+        renderMoveLog();
+        updateEvaluationBar();
+        updateCoachReadout(`Rewound state to Turn #${state.moveHistory.length + 1}.`);
+      }
+    }
+
+    function handleHint() {
+      if (state.isGameOver) return;
+      const best = computeBestMove(state.currentTurn, 'hard');
+      const cell = typeof best === 'number' ? best : (best ? best.cell : null);
+      if (cell !== null && cell !== undefined) {
+        state.hintCell = cell;
+        sfx.playHint();
+        renderBoard();
+        const cName = coordName(cell, state.gridSize);
+        updateCoachReadout(`Tactical Engine recommends coordinate ${cName} for optimal line pressure.`);
+        showToast(`Optimal move highlighted: ${cName}`);
+      }
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS & UI BINDINGS
+    // =========================================================================
+    function bindControls() {
+      // Theme buttons
+      const themes = [
+        { id: 'themeObsidianBtn', attr: '' },
+        { id: 'themeCyberBtn', attr: 'cyber' },
+        { id: 'themeEmeraldBtn', attr: 'emerald' }
+      ];
+      themes.forEach((t) => {
+        document.getElementById(t.id).addEventListener('click', () => {
+          sfx.playClick();
+          themes.forEach((o) => document.getElementById(o.id).classList.remove('active'));
+          document.getElementById(t.id).classList.add('active');
+          if (t.attr) {
+            document.documentElement.setAttribute('data-theme', t.attr);
+          } else {
+            document.documentElement.removeAttribute('data-theme');
+          }
+          updateStatusBanner();
+          if (winLaserState) {
+            triggerWinLaser(winLaserState.combo, winLaserState.winnerMark);
+          }
+        });
+      });
+
+      // Sound toggle
+      document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        sfx.enabled = !sfx.enabled;
+        document.getElementById('soundOnIcon').classList.toggle('hidden', !sfx.enabled);
+        document.getElementById('soundOffIcon').classList.toggle('hidden', sfx.enabled);
+        document.getElementById('soundLabel').textContent = sfx.enabled ? 'SFX On' : 'Muted';
+        if (sfx.enabled) sfx.playClick();
+        showToast(sfx.enabled ? 'Synthesized Audio Enabled' : 'Audio Muted');
+      });
+
+      // Help Modal
+      const helpModal = document.getElementById('helpModal');
+      const openHelp = () => {
+        sfx.playClick();
+        helpModal.classList.remove('hidden');
+        helpModal.classList.add('flex');
+      };
+      const closeHelp = () => {
+        sfx.playClick();
+        helpModal.classList.add('hidden');
+        helpModal.classList.remove('flex');
+      };
+      document.getElementById('helpModalBtn').addEventListener('click', openHelp);
+      document.getElementById('closeHelpModalBtn').addEventListener('click', closeHelp);
+      document.getElementById('gotItHelpBtn').addEventListener('click', closeHelp);
+
+      // Variant Buttons
+      const variants = [
+        {
+          id: 'variantClassicBtn',
+          key: 'classic',
+          badge: 'Classic 3×3',
+          desc: 'Standard 3×3 grid. Align 3 marks horizontally, vertically, or diagonally to claim victory.'
+        },
+        {
+          id: 'variantInfiniteBtn',
+          key: 'infinite',
+          badge: 'Infinite 3-Cap',
+          desc: 'Max 3 marks per player! Placing your 4th mark vaporizes your oldest mark. Zero draws—pure tactical combat.'
+        },
+        {
+          id: 'variantGrid4Btn',
+          key: 'grid4',
+          badge: 'Tactical 4×4',
+          desc: 'Expanded 16-cell tactical grid. Align 4 marks in a row horizontally, vertically, or diagonally.'
+        }
+      ];
+
+      variants.forEach((v) => {
+        document.getElementById(v.id).addEventListener('click', () => {
+          sfx.playClick();
+          variants.forEach((o) => document.getElementById(o.id).classList.remove('active'));
+          document.getElementById(v.id).classList.add('active');
+          state.variant = v.key;
+          document.getElementById('modeBadge').textContent = v.badge;
+          document.getElementById('variantDesc').textContent = v.desc;
+          startNewRound(false);
+          showToast(`Switched to ${v.badge}`);
+        });
+      });
+
+      // Opponent Mode
+      const oppAiBtn = document.getElementById('oppAiBtn');
+      const oppHumanBtn = document.getElementById('oppHumanBtn');
+      const aiPanel = document.getElementById('aiSettingsPanel');
+
+      oppAiBtn.addEventListener('click', () => {
+        sfx.playClick();
+        oppAiBtn.classList.add('active');
+        oppHumanBtn.classList.remove('active');
+        aiPanel.classList.remove('hidden');
+        state.opponent = 'ai';
+        startNewRound(false);
+      });
+
+      oppHumanBtn.addEventListener('click', () => {
+        sfx.playClick();
+        oppHumanBtn.classList.add('active');
+        oppAiBtn.classList.remove('active');
+        aiPanel.classList.add('hidden');
+        state.opponent = 'human';
+        startNewRound(false);
+      });
+
+      // Difficulty Buttons
+      const diffs = [
+        { id: 'diffEasyBtn', key: 'easy', label: 'Casual' },
+        { id: 'diffMediumBtn', key: 'medium', label: 'Tactical' },
+        { id: 'diffHardBtn', key: 'hard', label: 'Grandmaster' }
+      ];
+      diffs.forEach((d) => {
+        document.getElementById(d.id).addEventListener('click', () => {
+          sfx.playClick();
+          diffs.forEach((o) => document.getElementById(o.id).classList.remove('active'));
+          document.getElementById(d.id).classList.add('active');
+          state.difficulty = d.key;
+          document.getElementById('aiDiffBadge').textContent = d.label;
+          startNewRound(false);
+        });
+      });
+
+      // Play As X or O
+      const playXBtn = document.getElementById('playAsXBtn');
+      const playOBtn = document.getElementById('playAsOBtn');
+      playXBtn.addEventListener('click', () => {
+        sfx.playClick();
+        playXBtn.classList.add('active');
+        playOBtn.classList.remove('active');
+        state.humanMark = 'X';
+        startNewRound(false);
+      });
+      playOBtn.addEventListener('click', () => {
+        sfx.playClick();
+        playOBtn.classList.add('active');
+        playXBtn.classList.remove('active');
+        state.humanMark = 'O';
+        startNewRound(false);
+      });
+
+      // Action Buttons
+      document.getElementById('newRoundBtn').addEventListener('click', () => {
+        sfx.playClick();
+        startNewRound(true);
+      });
+      document.getElementById('undoMoveBtn').addEventListener('click', handleUndo);
+      document.getElementById('hintBtn').addEventListener('click', handleHint);
+
+      document.getElementById('resetStatsBtn').addEventListener('click', () => {
+        sfx.playClick();
+        state.stats = { X: 0, O: 0, draw: 0, streakX: 0, streakO: 0 };
+        state.roundNumber = 1;
+        saveStats();
+        updateScoreboardUI();
+        showToast('Scoreboard telemetry reset');
+      });
+
+      // Keyboard Shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const key = e.key.toLowerCase();
+
+        if (key >= '1' && key <= '9' && state.gridSize === 3) {
+          const idx = parseInt(key, 10) - 1;
+          handleCellClick(idx);
+        } else if (key === 'r') {
+          sfx.playClick();
+          startNewRound(true);
+        } else if (key === 'u') {
+          handleUndo();
+        } else if (key === 'h') {
+          handleHint();
+        } else if (key === 'm') {
+          document.getElementById('soundToggleBtn').click();
+        } else if (key === 'escape') {
+          helpModal.classList.add('hidden');
+          helpModal.classList.remove('flex');
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+        if (winLaserState) {
+          triggerWinLaser(winLaserState.combo, winLaserState.winnerMark);
+        }
+      });
+    }
+
+    // Initialize on Window Load
+    window.onload = () => {
+      loadSavedStats();
+      bindControls();
+      resizeCanvases();
+      initAmbientParticles();
+      startNewRound(false);
+      requestAnimationFrame(animateCanvases);
+    };
+  </script>
+</body>
+</html>
